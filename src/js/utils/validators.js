@@ -137,16 +137,25 @@ export function isValidImageType(file) {
 
 /**
  * Validate backup data structure
+ * Supports both current format (v2+) and legacy formats
  */
 export function isValidBackup(data) {
   try {
-    return (
-      data &&
-      typeof data === 'object' &&
-      Array.isArray(data.poops) &&
-      typeof data.dogProfile === 'object' &&
-      'version' in data
-    );
+    if (!data || typeof data !== 'object') return false;
+
+    // Current format: has version, poops array, dogProfile object
+    if ('version' in data && Array.isArray(data.poops)) return true;
+
+    // Legacy format v1: has poops array but no version
+    if (Array.isArray(data.poops) && data.poops.length >= 0) return true;
+
+    // Legacy format: poops stored under different key names
+    if (Array.isArray(data.records) || Array.isArray(data.data)) return true;
+
+    // Legacy format: top-level array of poops
+    if (Array.isArray(data)) return true;
+
+    return false;
   } catch (e) {
     return false;
   }

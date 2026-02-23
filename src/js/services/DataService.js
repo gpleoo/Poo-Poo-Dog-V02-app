@@ -402,6 +402,7 @@ export class DataService {
 
   /**
    * Import backup data
+   * Supports current format (v2+) and legacy formats from older app versions
    */
   importBackup(backupData) {
     let data;
@@ -409,19 +410,34 @@ export class DataService {
     try {
       data = typeof backupData === 'string' ? JSON.parse(backupData) : backupData;
     } catch (error) {
-      throw new Error('Invalid backup file format');
+      throw new Error('File non valido: formato JSON non riconosciuto');
     }
 
     if (!isValidBackup(data)) {
-      throw new Error('Invalid backup data structure');
+      throw new Error('Struttura del backup non riconosciuta');
     }
 
-    // Restore data
-    this.poops = data.poops || [];
-    this.dogProfile = data.dogProfile || {};
-    this.dogPhoto = data.dogPhoto || null;
-    this.savedNotes = data.savedNotes || [];
-    this.foodHistory = data.foodHistory || [];
+    // Migrate legacy format: top-level array of poops
+    if (Array.isArray(data)) {
+      data = { poops: data, dogProfile: {} };
+    }
+
+    // Migrate legacy format: poops under different keys
+    if (!data.poops && Array.isArray(data.records)) {
+      data.poops = data.records;
+    } else if (!data.poops && Array.isArray(data.data)) {
+      data.poops = data.data;
+    }
+
+    // Normalize each poop record for compatibility with old field names
+    const normalizedPoops = (data.poops || []).map(poop => this._normalizePoop(poop));
+
+    // Restore data with defaults for missing fields
+    this.poops = normalizedPoops;
+    this.dogProfile = data.dogProfile || data.dog || data.profile || {};
+    this.dogPhoto = data.dogPhoto || data.photo || null;
+    this.savedNotes = data.savedNotes || data.notes || [];
+    this.foodHistory = data.foodHistory || data.foods || [];
     this.mapSettings = data.mapSettings || { zoom: 16, autoCenter: true, dogMarkerVisible: true };
     this.achievements = data.achievements || { completedQuadrants: 0, quadrantsGridVisible: false };
 
@@ -434,7 +450,36 @@ export class DataService {
     this._saveToStorage(STORAGE_KEYS.mapSettings, this.mapSettings);
     this._saveToStorage(STORAGE_KEYS.achievements, this.achievements);
 
+    console.log(`✅ Imported ${this.poops.length} poop records`);
     return true;
+  }
+
+  /**
+   * Normalize a poop record from any legacy format to current schema
+   */
+  _normalizePoop(poop) {
+    if (!poop || typeof poop !== 'object') return null;
+
+    return {
+      // ID: use existing or generate new
+      id: poop.id || poop._id || generateId(),
+      // Timestamp: try different field names
+      timestamp: poop.timestamp || poop.date || poop.time || poop.createdAt || new Date().toISOString(),
+      // Coordinates
+      lat: poop.lat ?? poop.latitude ?? poop.coords?.lat ?? null,
+      lng: poop.lng ?? poop.longitude ?? poop.coords?.lng ?? null,
+      // Status flags
+      isManual: poop.isManual ?? poop.manual ?? false,
+      // Health data - map legacy field names
+      type: poop.type || poop.stato || poop.status || poop.consistency || 'healthy',
+      size: poop.size || poop.dimensione || poop.dimension || 'medium',
+      color: poop.color || poop.colore || poop.colour || 'normal',
+      smell: poop.smell || poop.odore || poop.odor || 'normal',
+      // Optional fields
+      food: poop.food || poop.cibo || poop.alimento || '',
+      hoursSinceMeal: poop.hoursSinceMeal || poop.ore || poop.hours || '',
+      notes: poop.notes || poop.note || poop.description || ''
+    };
   }
 
   /**
