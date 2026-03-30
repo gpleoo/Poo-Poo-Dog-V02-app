@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: '.',
-  base: '/Poo-Poo-Dog-V01/',
+  base: '/Poo-Poo-Dog-V02-app/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
