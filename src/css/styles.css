@@ -1514,6 +1514,34 @@ button:active {
     font-style: italic;
 }
 
+.badge-category-label {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #667eea;
+    padding: 8px 4px 4px;
+    margin-top: 6px;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* Health Alert Banner */
+.health-alert-banner {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    font-size: 0.92em;
+    line-height: 1.4;
+}
+.health-alert-banner.warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeeba);
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+.health-alert-banner.severe {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
 .next-badge {
     background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
     border-radius: 12px;

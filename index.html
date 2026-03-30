@@ -10,6 +10,8 @@
     <meta name="author" content="Giampietro Leonoro, Monica Amato">
     <meta name="rights" content="This is proprietary software. Unauthorized use is prohibited.">
     <meta name="description" content="Professional dog poop tracking app with GPS and health monitoring">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
     <title>🐕 Poo-Poo Dog Tracker 💩</title>
 
     <!-- Google Fonts -->
@@ -80,10 +82,21 @@
             <div class="modal-content modal-achievements">
                 <h2 id="achievementsTitle">🏆 Traguardi e Punteggi</h2>
 
+                <!-- Health Alert Banner -->
+                <div id="healthAlertBanner" class="health-alert-banner" style="display:none;"></div>
+
                 <div class="achievements-summary">
                     <div class="achievement-stat">
                         <div class="stat-value" id="totalPoints">0</div>
                         <div class="stat-label">Punti Totali</div>
+                    </div>
+                    <div class="achievement-stat">
+                        <div class="stat-value" id="currentStreak">0</div>
+                        <div class="stat-label">🔥 Streak Giorni</div>
+                    </div>
+                    <div class="achievement-stat">
+                        <div class="stat-value" id="bestStreak">0</div>
+                        <div class="stat-label">🏅 Miglior Streak</div>
                     </div>
                     <div class="achievement-stat">
                         <div class="stat-value" id="completedZones">0</div>
