@@ -12,12 +12,35 @@ export class AchievementsService {
     // Points system
     this.POINTS_PER_QUADRANT = 100;
 
-    // Badges configuration
+    // Badges configuration - Quadrant-based
     this.BADGES = {
       explorer: { threshold: 5, name: 'Esploratore Urbano', icon: '🗺️', points: 500 },
       adventurer: { threshold: 10, name: 'Avventuriero', icon: '🎒', points: 1000 },
       conqueror: { threshold: 20, name: 'Conquistatore della Città', icon: '👑', points: 2000 },
       nomad: { threshold: 50, name: 'Nomade delle Cacche', icon: '🌍', points: 5000 }
+    };
+
+    // Activity badges - based on total registrations
+    this.ACTIVITY_BADGES = {
+      first: { threshold: 1, name: 'Prima Cacca!', icon: '🎉', points: 50 },
+      collector10: { threshold: 10, name: 'Collezionista', icon: '📦', points: 200 },
+      collector50: { threshold: 50, name: 'Analista Esperto', icon: '🔬', points: 500 },
+      veteran200: { threshold: 200, name: 'Veterano', icon: '🎖️', points: 1500 },
+      legend500: { threshold: 500, name: 'Leggenda', icon: '⭐', points: 3000 }
+    };
+
+    // Streak badges - based on consecutive days
+    this.STREAK_BADGES = {
+      streak3: { threshold: 3, name: '3 Giorni di Fila!', icon: '🔥', points: 100 },
+      streak7: { threshold: 7, name: 'Una Settimana!', icon: '💪', points: 300 },
+      streak14: { threshold: 14, name: 'Due Settimane!', icon: '🏅', points: 600 },
+      streak30: { threshold: 30, name: 'Un Mese Intero!', icon: '🏆', points: 1500 }
+    };
+
+    // Health badges - based on healthy poop tracking
+    this.HEALTH_BADGES = {
+      healthy10: { threshold: 10, name: '10 Sane Consecutive', icon: '💚', points: 200 },
+      healthExpert: { threshold: 50, name: 'Esperto di Salute', icon: '🩺', points: 800 }
     };
   }
 
@@ -167,17 +190,161 @@ export class AchievementsService {
   }
 
   /**
+   * Get unlocked activity badges based on total poop count
+   */
+  getUnlockedActivityBadges(totalPoops) {
+    const unlocked = [];
+    Object.entries(this.ACTIVITY_BADGES).forEach(([key, badge]) => {
+      if (totalPoops >= badge.threshold) {
+        unlocked.push({ key, ...badge, category: 'activity', unlocked: true });
+      }
+    });
+    return unlocked;
+  }
+
+  /**
+   * Get unlocked streak badges based on current streak
+   */
+  getUnlockedStreakBadges(currentStreak) {
+    const unlocked = [];
+    Object.entries(this.STREAK_BADGES).forEach(([key, badge]) => {
+      if (currentStreak >= badge.threshold) {
+        unlocked.push({ key, ...badge, category: 'streak', unlocked: true });
+      }
+    });
+    return unlocked;
+  }
+
+  /**
+   * Get unlocked health badges
+   */
+  getUnlockedHealthBadges(poops) {
+    const unlocked = [];
+    const healthyCount = poops.filter(p => p.type === 'healthy').length;
+
+    // Check consecutive healthy poops
+    let maxConsecutiveHealthy = 0;
+    let currentConsecutive = 0;
+    const sorted = [...poops].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    for (const poop of sorted) {
+      if (poop.type === 'healthy') {
+        currentConsecutive++;
+        maxConsecutiveHealthy = Math.max(maxConsecutiveHealthy, currentConsecutive);
+      } else {
+        currentConsecutive = 0;
+      }
+    }
+
+    if (maxConsecutiveHealthy >= this.HEALTH_BADGES.healthy10.threshold) {
+      unlocked.push({ key: 'healthy10', ...this.HEALTH_BADGES.healthy10, category: 'health', unlocked: true });
+    }
+    if (healthyCount >= this.HEALTH_BADGES.healthExpert.threshold) {
+      unlocked.push({ key: 'healthExpert', ...this.HEALTH_BADGES.healthExpert, category: 'health', unlocked: true });
+    }
+
+    return unlocked;
+  }
+
+  /**
+   * Calculate streak from poops array
+   */
+  calculateStreak(poops) {
+    if (poops.length === 0) return { current: 0, best: 0 };
+
+    // Get unique dates with at least one poop
+    const dates = new Set();
+    poops.forEach(p => {
+      if (p.timestamp) {
+        dates.add(new Date(p.timestamp).toDateString());
+      }
+    });
+
+    const today = new Date();
+    const todayStr = today.toDateString();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+
+    // Current streak: count backwards from today (or yesterday if no poop today yet)
+    let current = 0;
+    let checkDate = dates.has(todayStr) ? new Date(today) : (dates.has(yesterdayStr) ? new Date(yesterday) : null);
+
+    if (checkDate) {
+      while (dates.has(checkDate.toDateString())) {
+        current++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+    }
+
+    // Best streak: scan all sorted dates
+    const sortedDates = Array.from(dates).map(d => new Date(d)).sort((a, b) => a - b);
+    let best = 0;
+    let tempStreak = 1;
+    for (let i = 1; i < sortedDates.length; i++) {
+      const diff = Math.round((sortedDates[i] - sortedDates[i - 1]) / (1000 * 60 * 60 * 24));
+      if (diff === 1) {
+        tempStreak++;
+        best = Math.max(best, tempStreak);
+      } else {
+        tempStreak = 1;
+      }
+    }
+    best = Math.max(best, tempStreak, current);
+
+    return { current, best };
+  }
+
+  /**
+   * Check health alert: returns alert if >50% abnormal in last 3 days
+   */
+  checkHealthAlert(poops) {
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    const recentPoops = poops.filter(p => new Date(p.timestamp) >= threeDaysAgo);
+    if (recentPoops.length < 2) return null;
+
+    const abnormal = recentPoops.filter(p => ['soft', 'diarrhea', 'hard', 'blood', 'mucus'].includes(p.type));
+    const abnormalPercent = Math.round((abnormal.length / recentPoops.length) * 100);
+
+    if (abnormalPercent > 50) {
+      const hasBloodOrMucus = abnormal.some(p => p.type === 'blood' || p.type === 'mucus');
+      return {
+        percent: abnormalPercent,
+        total: recentPoops.length,
+        abnormalCount: abnormal.length,
+        severe: hasBloodOrMucus
+      };
+    }
+
+    return null;
+  }
+
+  /**
    * Get full achievements statistics
    * @param {Array} poops - Array of poop objects
+   * @param {Object} streakData - Streak data { current, best }
    * @returns {Object} Complete achievements data
    */
-  getAchievements(poops) {
+  getAchievements(poops, streakData = null) {
     const quadrants = this.calculateQuadrants(poops);
     const completedQuadrants = Object.values(quadrants).filter(q => q.completed);
     const completedCount = completedQuadrants.length;
     const totalPoints = this.calculatePoints(quadrants);
     const unlockedBadges = this.getUnlockedBadges(completedCount);
     const nextBadge = this.getNextBadge(completedCount);
+
+    // Calculate streak if not provided
+    const streak = streakData || this.calculateStreak(poops);
+
+    // Get all badge types
+    const activityBadges = this.getUnlockedActivityBadges(poops.length);
+    const streakBadges = this.getUnlockedStreakBadges(streak.current);
+    const healthBadges = this.getUnlockedHealthBadges(poops);
+    const allBadges = [...unlockedBadges, ...activityBadges, ...streakBadges, ...healthBadges];
+
+    // Calculate total bonus points from all badges
+    const badgePoints = allBadges.reduce((sum, b) => sum + (b.points || 0), 0);
 
     // Get top quadrants by count
     const topQuadrants = Object.values(quadrants)
@@ -191,17 +358,22 @@ export class AchievementsService {
         progress: Math.min(100, (q.count / this.COMPLETION_THRESHOLD) * 100)
       }));
 
+    // Health alert
+    const healthAlert = this.checkHealthAlert(poops);
+
     return {
-      totalPoints,
+      totalPoints: totalPoints + badgePoints,
       totalQuadrants: Object.keys(quadrants).length,
       completedQuadrants: completedCount,
       completionRate: Object.keys(quadrants).length > 0
         ? Math.round((completedCount / Object.keys(quadrants).length) * 100)
         : 0,
-      unlockedBadges,
+      unlockedBadges: allBadges,
       nextBadge,
       topQuadrants,
-      quadrants // Full quadrants data for map overlay
+      quadrants,
+      streak,
+      healthAlert
     };
   }
 

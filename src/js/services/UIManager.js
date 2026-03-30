@@ -856,11 +856,23 @@ export class UIManager {
     document.getElementById('completedZones').textContent = achievementsData.completedQuadrants || 0;
     document.getElementById('totalZones').textContent = achievementsData.totalQuadrants || 0;
 
+    // Update streak display
+    if (achievementsData.streak) {
+      const currentEl = document.getElementById('currentStreak');
+      const bestEl = document.getElementById('bestStreak');
+      if (currentEl) currentEl.textContent = achievementsData.streak.current || 0;
+      if (bestEl) bestEl.textContent = achievementsData.streak.best || 0;
+    }
+
+    // Update health alert banner
+    this.updateHealthAlert(achievementsData.healthAlert);
+
     // Update badge counter
     const badge = document.getElementById('achievementsBadge');
     if (badge) {
-      if (achievementsData.completedQuadrants > 0) {
-        badge.textContent = achievementsData.completedQuadrants;
+      const badgeCount = (achievementsData.unlockedBadges || []).length;
+      if (badgeCount > 0) {
+        badge.textContent = badgeCount;
         badge.style.display = 'flex';
       } else {
         badge.style.display = 'none';
@@ -878,7 +890,29 @@ export class UIManager {
   }
 
   /**
-   * Update badges list
+   * Update health alert banner
+   */
+  updateHealthAlert(healthAlert) {
+    const banner = document.getElementById('healthAlertBanner');
+    if (!banner) return;
+
+    if (!healthAlert) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    const severity = healthAlert.severe ? 'severe' : 'warning';
+    const message = healthAlert.severe
+      ? `🚨 Attenzione: ${healthAlert.percent}% delle deiezioni degli ultimi 3 giorni risulta anomalo, con presenza di sangue o muco. <strong>Consigliamo una visita veterinaria urgente.</strong>`
+      : `⚠️ Attenzione: ${healthAlert.percent}% delle deiezioni degli ultimi 3 giorni (${healthAlert.abnormalCount}/${healthAlert.total}) risulta anomalo. Considera una visita dal veterinario.`;
+
+    banner.className = `health-alert-banner ${severity}`;
+    banner.innerHTML = message;
+    banner.style.display = 'block';
+  }
+
+  /**
+   * Update badges list with categories
    */
   updateBadgesList(badges) {
     const list = document.getElementById('badgesList');
@@ -889,13 +923,33 @@ export class UIManager {
       return;
     }
 
-    list.innerHTML = badges.map(badge => `
-      <div class="badge-item">
-        <div class="badge-icon">${badge.icon}</div>
-        <div class="badge-name">${badge.name}</div>
-        <div class="badge-points">+${badge.points} punti</div>
-      </div>
-    `).join('');
+    // Group by category
+    const categories = {
+      undefined: { label: '🗺️ Esplorazione', badges: [] },
+      activity: { label: '📦 Attività', badges: [] },
+      streak: { label: '🔥 Streak', badges: [] },
+      health: { label: '💚 Salute', badges: [] }
+    };
+
+    badges.forEach(badge => {
+      const cat = badge.category || 'undefined';
+      if (categories[cat]) categories[cat].badges.push(badge);
+    });
+
+    let html = '';
+    for (const cat of Object.values(categories)) {
+      if (cat.badges.length === 0) continue;
+      html += `<div class="badge-category-label">${cat.label}</div>`;
+      html += cat.badges.map(badge => `
+        <div class="badge-item">
+          <div class="badge-icon">${badge.icon}</div>
+          <div class="badge-name">${badge.name}</div>
+          <div class="badge-points">+${badge.points} punti</div>
+        </div>
+      `).join('');
+    }
+
+    list.innerHTML = html;
   }
 
   /**

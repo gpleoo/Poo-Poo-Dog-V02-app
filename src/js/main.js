@@ -80,6 +80,9 @@ class PoopTracker {
       // Check urgent reminders (after UI is ready)
       this.checkUrgentReminders();
 
+      // Request browser notification permission
+      this.notificationService.requestNotificationPermission();
+
       // Show welcome message if first time
       if (this.dataService.isFirstTime && !this.dataService.dogProfile.name) {
         setTimeout(() => {
@@ -629,7 +632,7 @@ class PoopTracker {
       // Get current poops
       const poops = this.dataService.getAllPoops();
 
-      // Calculate achievements
+      // Calculate achievements (includes streak, health alert, all badges)
       const achievementsData = this.achievementsService.getAchievements(poops);
 
       // Update UI
@@ -654,6 +657,17 @@ class PoopTracker {
         setTimeout(() => {
           this.uiManager.showAchievementUnlocked(newAchievement);
         }, 1000);
+      }
+
+      // Send browser notification for health alert (only once per session)
+      if (achievementsData.healthAlert && !this._healthAlertSent) {
+        this._healthAlertSent = true;
+        const dogProfile = this.dataService.getDogProfile();
+        const dogName = dogProfile.name || 'Il tuo cane';
+        this.notificationService.showBrowserNotification(
+          '⚠️ Attenzione Salute',
+          { body: `${dogName}: ${achievementsData.healthAlert.percent}% deiezioni anomale negli ultimi 3 giorni.` }
+        );
       }
 
       // Save completed count
@@ -729,6 +743,23 @@ class PoopTracker {
       setTimeout(() => {
         this.uiManager.showUrgentReminders(urgentReminders);
       }, 1500);
+
+      // Send browser notifications for overdue reminders
+      const dogProfile = this.dataService.getDogProfile();
+      const dogName = dogProfile.name || 'il tuo cane';
+      urgentReminders.forEach(reminder => {
+        if (reminder.isOverdue) {
+          this.notificationService.showBrowserNotification(
+            `${reminder.title} scaduto!`,
+            { body: `${dogName}: scaduto da ${Math.abs(reminder.daysLeft)} giorni. Prenota una visita!` }
+          );
+        } else if (reminder.daysLeft <= 3) {
+          this.notificationService.showBrowserNotification(
+            `${reminder.title} in scadenza`,
+            { body: `${dogName}: scade tra ${reminder.daysLeft} giorni.` }
+          );
+        }
+      });
     }
   }
 
@@ -748,3 +779,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Store app instance globally for debugging
   window.poopTrackerApp = app;
 });
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}

@@ -35,6 +35,10 @@ export class MapService {
     this.quadrantsLayer = null;
     this.quadrantsVisible = false;
 
+    // Dog marker data (persisted across GPS updates)
+    this.dogPhoto = null;
+    this.dogName = 'il tuo cane';
+
     // Callbacks
     this.onMarkerClick = null;
     this.onUserMarkerClick = null;
@@ -269,7 +273,15 @@ export class MapService {
   /**
    * Update user marker on map
    */
-  updateUserMarker(dogPhoto = null, dogName = 'il tuo cane') {
+  updateUserMarker(dogPhoto, dogName) {
+    // Store dog photo and name when explicitly provided
+    if (dogPhoto !== undefined) {
+      this.dogPhoto = dogPhoto;
+    }
+    if (dogName !== undefined) {
+      this.dogName = dogName;
+    }
+
     if (!this.userPosition) return;
 
     // Check if marker existed and was visible before updating
@@ -280,8 +292,8 @@ export class MapService {
       this.map.removeLayer(this.userMarker);
     }
 
-    const iconHtml = dogPhoto
-      ? `<div class="dog-marker" style="background-image: url('${dogPhoto}'); background-size: cover; background-position: center;"></div>`
+    const iconHtml = this.dogPhoto
+      ? `<div class="dog-marker" style="background-image: url('${this.dogPhoto}'); background-size: cover; background-position: center;"></div>`
       : `<div class="dog-marker" style="display: flex; align-items: center; justify-content: center; font-size: 2em;">🐕</div>`;
 
     const userIcon = L.divIcon({
@@ -308,9 +320,9 @@ export class MapService {
       this.userMarker.on('click', this.onUserMarkerClick);
     }
 
-    const popupText = dogPhoto
-      ? `<b>🐕 Tu e ${dogName} siete qui!</b><br>Clicca per cambiare la foto`
-      : `<b>🐕 Tu e ${dogName} siete qui!</b><br>Clicca per aggiungere la foto`;
+    const popupText = this.dogPhoto
+      ? `<b>🐕 Tu e ${this.dogName} siete qui!</b><br>Clicca per cambiare la foto`
+      : `<b>🐕 Tu e ${this.dogName} siete qui!</b><br>Clicca per aggiungere la foto`;
 
     this.userMarker.bindPopup(popupText);
   }

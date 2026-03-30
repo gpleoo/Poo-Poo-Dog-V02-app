@@ -21,7 +21,8 @@ export const STORAGE_KEYS = {
   gpsEnabled: 'poopTracker_gpsEnabled',
   mapSettings: 'poopTracker_mapSettings',
   firstTime: 'poopTracker_firstTime',
-  achievements: 'poopTracker_achievements'
+  achievements: 'poopTracker_achievements',
+  streak: 'poopTracker_streak'
 };
 
 // Map Configuration
