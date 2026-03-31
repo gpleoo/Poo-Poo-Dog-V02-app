@@ -117,15 +117,38 @@
     padding: 22px 28px;
     text-align: center;
   }
-  .calc-box h3 { color: #fff; font-size: 1.1rem; margin-bottom: 10px; }
+  .calc-box h3 { color: #fff; font-size: 1.1rem; margin-bottom: 14px; }
+  .calc-row {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,.15);
+  }
+  .calc-row:last-of-type { border-bottom: none; }
+  .calc-row-label {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: .6;
+    margin-bottom: 4px;
+  }
   .calc-formula {
     font-family: Georgia, serif;
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: .5px;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
   }
-  .calc-note { font-size: .82rem; opacity: .75; }
+  .calc-formula.large {
+    font-size: 1.55rem;
+    color: #74b881;
+  }
+  .calc-row-note { font-size: .8rem; opacity: .7; }
+  .calc-total {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 2px solid rgba(255,255,255,.3);
+  }
+  .calc-total .calc-formula { font-size: 1.6rem; color: #74b881; }
+  .calc-note { font-size: .82rem; opacity: .6; margin-top: 8px; }
 
   /* ===== 7. STATO SVILUPPO ===== */
   .dev-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
@@ -280,16 +303,16 @@
   <!-- ===== 2. BARRA METRICHE ===== -->
   <div class="metrics">
     <div class="metric-card">
-      <div class="number">7M</div>
-      <div class="label">Cani in Italia</div>
+      <div class="number">90M</div>
+      <div class="label">Cani in Europa (FEDIAF 2025)</div>
     </div>
     <div class="metric-card">
       <div class="number">6+</div>
       <div class="label">Stream di Ricavo</div>
     </div>
     <div class="metric-card">
-      <div class="number">€209K</div>
-      <div class="label">Potenziale / mese (1%)</div>
+      <div class="number">€643K</div>
+      <div class="label">Potenziale / mese</div>
     </div>
     <div class="metric-card">
       <div class="number">€0</div>
@@ -369,9 +392,21 @@
   <!-- ===== 6. CALCOLO POTENZIALE ===== -->
   <div class="section">
     <div class="calc-box">
-      <h3>Calcolo Potenziale — Solo Abbonamenti</h3>
-      <div class="calc-formula">7.000.000 × 1% × €2,99 = €209.300 / mese</div>
-      <div class="calc-note">Solo abbonamenti premium. Advertising, partnership e servizi marketplace esclusi dal calcolo.</div>
+      <h3>Calcolo Potenziale — Solo Abbonamenti Premium (€2,99/mese)</h3>
+      <div class="calc-row">
+        <div class="calc-row-label">Italia — mercato domestico (conv. 0,5%)</div>
+        <div class="calc-formula">7.000.000 × 0,5% × €2,99 = €104.650 / mese</div>
+        <div class="calc-row-note">App già disponibile in italiano</div>
+      </div>
+      <div class="calc-row">
+        <div class="calc-row-label">Europa — con supporto multilingua (conv. 0,2%)</div>
+        <div class="calc-formula large">90.000.000 × 0,2% × €2,99 = €538.200 / mese</div>
+        <div class="calc-row-note">EN, DE, FR, ES — il mercato si moltiplica ×13 (fonte FEDIAF 2025)</div>
+      </div>
+      <div class="calc-total">
+        <div class="calc-formula large">Totale: €642.850 / mese</div>
+      </div>
+      <div class="calc-note">Solo abbonamenti premium con tassi di conversione conservativi. Advertising, partnership e servizi marketplace esclusi dal calcolo.</div>
     </div>
   </div>
 
@@ -458,6 +493,8 @@
     <h2 style="font-size:1.15rem; margin-bottom:4px;">Roadmap — Feature Pianificate</h2>
     <p style="font-size:.85rem; color:#555; margin-bottom:6px;">Funzionalità in progettazione, non ancora sviluppate</p>
     <ul class="roadmap-list">
+      <li>Supporto multilingua (EN, DE, FR, ES) per espansione europea</li>
+      <li>Sistema login / registrazione utente</li>
       <li>Chat community per zona / quartiere</li>
       <li>Allarme cane perso con notifica push geolocalizzata</li>
       <li>Chat diretta con veterinari</li>
@@ -466,9 +503,8 @@
       <li>Rating e recensioni aree sgambamento</li>
       <li>Notifiche push programmate</li>
       <li>Integrazione brand pet e prodotti</li>
-      <li>Sistema login / registrazione utente</li>
+      <li>Localizzazione marketplace e servizi per paese</li>
       <li>Classifiche di quartiere e sfide social</li>
-      <li>Streak giornalieri e bonus login</li>
       <li>Prenotazione diretta servizi pet</li>
     </ul>
   </div>
