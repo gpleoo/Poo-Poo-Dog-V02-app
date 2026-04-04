@@ -42,6 +42,29 @@ export class AchievementsService {
       healthy10: { threshold: 10, name: '10 Sane Consecutive', icon: '💚', points: 200 },
       healthExpert: { threshold: 50, name: 'Esperto di Salute', icon: '🩺', points: 800 }
     };
+
+    // Bone Collector badges - 16 badges based on bones collected
+    this.BONE_BADGES = {
+      // Milestone badges
+      firstBone:    { threshold: 1,    name: 'Primo Osso!', icon: '🦴', points: 50 },
+      bone10:       { threshold: 10,   name: 'Cercatore di Ossa', icon: '🦴', points: 100 },
+      bone25:       { threshold: 25,   name: 'Fiuto Fino', icon: '🐽', points: 200 },
+      bone50:       { threshold: 50,   name: 'Scavatore Esperto', icon: '⛏️', points: 400 },
+      bone100:      { threshold: 100,  name: 'Cacciatore di Ossa', icon: '🎯', points: 600 },
+      bone200:      { threshold: 200,  name: 'Instancabile', icon: '🏃', points: 1000 },
+      bone350:      { threshold: 350,  name: 'Cane da Tartufo', icon: '🍄', points: 1500 },
+      bone500:      { threshold: 500,  name: 'Re degli Ossetti', icon: '👑', points: 2000 },
+      bone750:      { threshold: 750,  name: 'Leggenda Vivente', icon: '🌟', points: 3000 },
+      bone1000:     { threshold: 1000, name: 'Millenario delle Ossa', icon: '💎', points: 5000 },
+      // Golden bone badges
+      golden1:      { threshold: 1,    name: 'Primo Oro!', icon: '✨', points: 150, golden: true },
+      golden5:      { threshold: 5,    name: 'Cercatore d\'Oro', icon: '🥇', points: 500, golden: true },
+      golden10:     { threshold: 10,   name: 'Mani d\'Oro', icon: '🤲', points: 1000, golden: true },
+      golden25:     { threshold: 25,   name: 'Re Mida', icon: '👑', points: 2500, golden: true },
+      // Special badges
+      dailyMax:     { threshold: 20,   name: 'Giornata Perfetta', icon: '🌈', points: 300, daily: true },
+      weekCollector:{ threshold: 100,  name: 'Settimana d\'Oro', icon: '📅', points: 800, weekly: true }
+    };
   }
 
   /**
@@ -246,6 +269,34 @@ export class AchievementsService {
   }
 
   /**
+   * Get unlocked bone collector badges
+   */
+  getUnlockedBoneBadges(boneStats) {
+    if (!boneStats) return [];
+    const unlocked = [];
+
+    Object.entries(this.BONE_BADGES).forEach(([key, badge]) => {
+      let qualifies = false;
+
+      if (badge.golden) {
+        qualifies = (boneStats.goldenCollected || 0) >= badge.threshold;
+      } else if (badge.daily) {
+        qualifies = (boneStats.collectedToday || 0) >= badge.threshold;
+      } else if (badge.weekly) {
+        qualifies = (boneStats.totalCollected || 0) >= badge.threshold;
+      } else {
+        qualifies = (boneStats.totalCollected || 0) >= badge.threshold;
+      }
+
+      if (qualifies) {
+        unlocked.push({ key, ...badge, category: 'bones', unlocked: true });
+      }
+    });
+
+    return unlocked;
+  }
+
+  /**
    * Calculate streak from poops array
    */
   calculateStreak(poops) {
@@ -326,7 +377,7 @@ export class AchievementsService {
    * @param {Object} streakData - Streak data { current, best }
    * @returns {Object} Complete achievements data
    */
-  getAchievements(poops, streakData = null) {
+  getAchievements(poops, streakData = null, boneStats = null) {
     const quadrants = this.calculateQuadrants(poops);
     const completedQuadrants = Object.values(quadrants).filter(q => q.completed);
     const completedCount = completedQuadrants.length;
@@ -341,7 +392,8 @@ export class AchievementsService {
     const activityBadges = this.getUnlockedActivityBadges(poops.length);
     const streakBadges = this.getUnlockedStreakBadges(streak.current);
     const healthBadges = this.getUnlockedHealthBadges(poops);
-    const allBadges = [...unlockedBadges, ...activityBadges, ...streakBadges, ...healthBadges];
+    const boneBadges = this.getUnlockedBoneBadges(boneStats);
+    const allBadges = [...unlockedBadges, ...activityBadges, ...streakBadges, ...healthBadges, ...boneBadges];
 
     // Calculate total bonus points from all badges
     const badgePoints = allBadges.reduce((sum, b) => sum + (b.points || 0), 0);

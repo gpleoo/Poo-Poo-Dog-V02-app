@@ -22,7 +22,8 @@ export const STORAGE_KEYS = {
   mapSettings: 'poopTracker_mapSettings',
   firstTime: 'poopTracker_firstTime',
   achievements: 'poopTracker_achievements',
-  streak: 'poopTracker_streak'
+  streak: 'poopTracker_streak',
+  boneStats: 'poopTracker_boneStats'
 };
 
 // Map Configuration

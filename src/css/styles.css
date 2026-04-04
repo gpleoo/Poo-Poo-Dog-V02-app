@@ -1694,6 +1694,55 @@ button:active {
     font-weight: 600;
 }
 
+/* ========== BONE COLLECTOR ========== */
+
+.bone-marker-container {
+    background: none !important;
+    border: none !important;
+}
+
+.bone-marker {
+    font-size: 1.6em;
+    text-align: center;
+    line-height: 44px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    animation: boneBounce 2s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.bone-marker:hover {
+    transform: scale(1.3);
+}
+
+.bone-marker.golden {
+    font-size: 1.4em;
+    animation: boneGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes boneBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes boneGlow {
+    0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 2px 8px rgba(255,215,0,0.6)); }
+    50% { transform: translateY(-10px) scale(1.1); filter: drop-shadow(0 4px 16px rgba(255,215,0,0.9)); }
+}
+
+/* Bone counter in header */
+.bone-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+}
+
 /* Copyright Protection Watermark - DO NOT REMOVE */
 body::before {
     content: "Copyright Giampietro Leonoro & Monica Amato";
