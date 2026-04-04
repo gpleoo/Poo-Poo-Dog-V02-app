@@ -1,9 +1,9 @@
 /**
- * Poo-Poo Dog Tracker - Bone Collector Service
+ * Poo-Poo Dog Tracker - Collectible Service
  * Copyright (c) 2024-2025 Giampietro Leonoro & Monica Amato. All Rights Reserved.
  *
- * Spawns collectible bones on the map near the user's position.
- * Bones can be tapped to collect and used for rewards.
+ * Spawns collectible treats on the map near the user's position:
+ * 🍪 Biscottini (common), 🍗 Cosce di pollo (medium), 🦴 Ossetti (rare)
  */
 
 import { STORAGE_KEYS } from '../utils/constants.js';
@@ -14,20 +14,28 @@ export class BoneCollectorService {
     this.notificationService = notificationService;
 
     // Configuration
-    this.SPAWN_INTERVAL_MS = 150000;      // Spawn new bones every 2.5 minutes
+    this.SPAWN_INTERVAL_MS = 150000;      // Spawn new items every 2.5 minutes
     this.SPAWN_RADIUS_MIN = 50;           // Minimum spawn distance (meters)
     this.SPAWN_RADIUS_MAX = 400;          // Maximum spawn distance (meters)
-    this.BONES_PER_SPAWN = 3;             // Bones per spawn cycle
-    this.MAX_BONES_ON_MAP = 8;            // Max bones visible at once
-    this.DAILY_LIMIT = 20;                // Max bones collectible per day
-    this.COLLECT_RADIUS = 30;             // Meters to collect a bone
-    this.DESPAWN_TIME_MS = 600000;        // Bones despawn after 10 minutes
-    this.GOLDEN_CHANCE = 0.05;            // 5% chance of golden bone (1 in 20)
+    this.ITEMS_PER_SPAWN = 4;             // Items per spawn cycle
+    this.MAX_ITEMS_ON_MAP = 12;           // Max items visible at once
+    this.DAILY_LIMIT = 30;                // Max items collectible per day
+    this.COLLECT_RADIUS = 30;             // Meters to collect an item
+    this.DESPAWN_TIME_MS = 600000;        // Items despawn after 10 minutes
+    this.GOLDEN_CHANCE = 0.05;            // 5% chance of golden bone (only for bones)
+
+    // Collectible types with rarity weights and point values
+    // Rarity: cookie 60%, chicken 30%, bone 10%
+    this.COLLECTIBLE_TYPES = {
+      cookie:  { emoji: '🍪', name: 'Biscottino', namePlural: 'Biscottini', points: 1, weight: 60, cssClass: 'cookie-marker' },
+      chicken: { emoji: '🍗', name: 'Coscia di Pollo', namePlural: 'Cosce di Pollo', points: 3, weight: 30, cssClass: 'chicken-marker' },
+      bone:    { emoji: '🦴', name: 'Ossetto', namePlural: 'Ossetti', points: 5, weight: 10, cssClass: 'bone-marker' }
+    };
     this.GOLDEN_MULTIPLIER = 5;           // Golden bones worth 5x
 
     // State
-    this.bones = new Map();               // Active bones on map { id: boneData }
-    this.boneMarkers = new Map();         // Leaflet markers for bones
+    this.bones = new Map();               // Active items on map { id: itemData }
+    this.boneMarkers = new Map();         // Leaflet markers for items
     this.spawnTimer = null;
     this.enabled = false;
 
@@ -36,6 +44,9 @@ export class BoneCollectorService {
       collectedToday: 0,
       totalCollected: 0,
       goldenCollected: 0,
+      cookieCollected: 0,
+      chickenCollected: 0,
+      boneCollected: 0,
       lastCollectionDate: null,
       wheelSpinsAvailable: 0
     };
@@ -116,27 +127,41 @@ export class BoneCollectorService {
     const userPos = this.mapService.getUserPosition();
     if (!userPos) return;
 
-    // Don't spawn if map has enough bones
-    if (this.bones.size >= this.MAX_BONES_ON_MAP) return;
+    // Don't spawn if map has enough items
+    if (this.bones.size >= this.MAX_ITEMS_ON_MAP) return;
 
     // Don't spawn if daily limit reached
     if (this.stats.collectedToday >= this.DAILY_LIMIT) return;
 
-    const bonesToSpawn = Math.min(
-      this.BONES_PER_SPAWN,
-      this.MAX_BONES_ON_MAP - this.bones.size
+    const itemsToSpawn = Math.min(
+      this.ITEMS_PER_SPAWN,
+      this.MAX_ITEMS_ON_MAP - this.bones.size
     );
 
-    for (let i = 0; i < bonesToSpawn; i++) {
+    for (let i = 0; i < itemsToSpawn; i++) {
       this._spawnSingleBone(userPos);
     }
   }
 
   /**
-   * Spawn a single bone at a random position near user
+   * Pick a random collectible type based on rarity weights
+   */
+  _pickRandomType() {
+    const types = Object.entries(this.COLLECTIBLE_TYPES);
+    const totalWeight = types.reduce((sum, [, t]) => sum + t.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (const [key, type] of types) {
+      roll -= type.weight;
+      if (roll <= 0) return key;
+    }
+    return 'cookie'; // fallback
+  }
+
+  /**
+   * Spawn a single collectible at a random position near user
    */
   _spawnSingleBone(userPos) {
-    const id = `bone_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const id = `item_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
     // Random angle and distance
     const angle = Math.random() * 2 * Math.PI;
@@ -147,15 +172,21 @@ export class BoneCollectorService {
     const dLat = (distance * Math.cos(angle)) / 111320;
     const dLng = (distance * Math.sin(angle)) / (111320 * Math.cos(userPos.lat * Math.PI / 180));
 
-    const isGolden = Math.random() < this.GOLDEN_CHANCE;
+    const collectibleType = this._pickRandomType();
+    const typeConfig = this.COLLECTIBLE_TYPES[collectibleType];
+
+    // Golden variant only for bones
+    const isGolden = collectibleType === 'bone' && Math.random() < this.GOLDEN_CHANCE;
 
     const bone = {
       id,
       lat: userPos.lat + dLat,
       lng: userPos.lng + dLng,
+      collectibleType,
+      typeConfig,
       isGolden,
       spawnTime: Date.now(),
-      value: isGolden ? this.GOLDEN_MULTIPLIER : 1
+      value: isGolden ? typeConfig.points * this.GOLDEN_MULTIPLIER : typeConfig.points
     };
 
     this.bones.set(id, bone);
@@ -168,13 +199,18 @@ export class BoneCollectorService {
   }
 
   /**
-   * Add a Leaflet marker for a bone
+   * Add a Leaflet marker for a collectible
    */
   _addBoneMarker(bone) {
     if (!this.mapService.map) return;
 
-    const iconClass = bone.isGolden ? 'bone-marker golden' : 'bone-marker';
-    const emoji = bone.isGolden ? '✨🦴✨' : '🦴';
+    let iconClass = bone.typeConfig.cssClass;
+    let emoji = bone.typeConfig.emoji;
+
+    if (bone.isGolden) {
+      iconClass = 'bone-marker golden';
+      emoji = '✨🦴✨';
+    }
 
     const icon = L.divIcon({
       html: `<div class="${iconClass}">${emoji}</div>`,
@@ -206,13 +242,13 @@ export class BoneCollectorService {
 
     const userPos = this.mapService.getUserPosition();
     if (!userPos) {
-      this.notificationService.showInfo('📍 GPS necessario per raccogliere gli ossetti');
+      this.notificationService.showInfo('📍 GPS necessario per raccogliere i premi');
       return;
     }
 
     // Check daily limit
     if (this.stats.collectedToday >= this.DAILY_LIMIT) {
-      this.notificationService.showInfo(`🦴 Hai raggiunto il limite giornaliero di ${this.DAILY_LIMIT} ossetti. Torna domani!`);
+      this.notificationService.showInfo(`🎒 Hai raggiunto il limite giornaliero di ${this.DAILY_LIMIT} premi. Torna domani!`);
       return;
     }
 
@@ -224,7 +260,7 @@ export class BoneCollectorService {
 
     if (distance > this.COLLECT_RADIUS) {
       const remaining = Math.round(distance - this.COLLECT_RADIUS);
-      this.notificationService.showInfo(`🦴 Avvicinati ancora ${remaining}m per raccogliere l'ossetto!`);
+      this.notificationService.showInfo(`${bone.typeConfig.emoji} Avvicinati ancora ${remaining}m per raccogliere!`);
       return;
     }
 
@@ -233,18 +269,23 @@ export class BoneCollectorService {
   }
 
   /**
-   * Collect a bone — update stats, remove marker, show feedback
+   * Collect a collectible — update stats, remove marker, show feedback
    */
   _collectBone(bone) {
     // Update stats
-    this.stats.collectedToday += bone.value;
-    this.stats.totalCollected += bone.value;
+    this.stats.collectedToday++;
+    this.stats.totalCollected++;
     if (bone.isGolden) {
       this.stats.goldenCollected++;
     }
 
-    // Award wheel spin every 5 bones
-    const prevSpinThreshold = Math.floor((this.stats.totalCollected - bone.value) / 5);
+    // Track per-type stats
+    if (bone.collectibleType === 'cookie') this.stats.cookieCollected++;
+    else if (bone.collectibleType === 'chicken') this.stats.chickenCollected++;
+    else if (bone.collectibleType === 'bone') this.stats.boneCollected++;
+
+    // Award wheel spin every 5 items
+    const prevSpinThreshold = Math.floor((this.stats.totalCollected - 1) / 5);
     const newSpinThreshold = Math.floor(this.stats.totalCollected / 5);
     if (newSpinThreshold > prevSpinThreshold) {
       this.stats.wheelSpinsAvailable++;
@@ -257,10 +298,11 @@ export class BoneCollectorService {
     this.bones.delete(bone.id);
 
     // Show feedback
+    const todayLabel = `(${this.stats.collectedToday}/${this.DAILY_LIMIT} oggi)`;
     if (bone.isGolden) {
-      this.notificationService.showSuccess(`✨ Osso dorato raccolto! Vale ${bone.value}x! (${this.stats.collectedToday}/${this.DAILY_LIMIT} oggi)`);
+      this.notificationService.showSuccess(`✨ Osso dorato raccolto! +${bone.value} punti! ${todayLabel}`);
     } else {
-      this.notificationService.showSuccess(`🦴 Ossetto raccolto! (${this.stats.collectedToday}/${this.DAILY_LIMIT} oggi)`);
+      this.notificationService.showSuccess(`${bone.typeConfig.emoji} ${bone.typeConfig.name} raccolto! +${bone.value} pt ${todayLabel}`);
     }
 
     // Trigger callback for UI update

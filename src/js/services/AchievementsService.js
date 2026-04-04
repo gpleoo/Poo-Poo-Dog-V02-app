@@ -43,7 +43,28 @@ export class AchievementsService {
       healthExpert: { threshold: 50, name: 'Esperto di Salute', icon: '🩺', points: 800 }
     };
 
-    // Bone Collector badges - 16 badges based on bones collected
+    // Cookie badges - 🍪 Biscottini (most common)
+    this.COOKIE_BADGES = {
+      firstCookie:  { threshold: 1,    name: 'Primo Biscottino!', icon: '🍪', points: 10 },
+      cookie10:     { threshold: 10,   name: 'Goloso', icon: '🍪', points: 50 },
+      cookie25:     { threshold: 25,   name: 'Amante dei Dolci', icon: '🧁', points: 100 },
+      cookie50:     { threshold: 50,   name: 'Pasticciere', icon: '👨‍🍳', points: 200 },
+      cookie100:    { threshold: 100,  name: 'Re dei Biscotti', icon: '🍪', points: 400 },
+      cookie250:    { threshold: 250,  name: 'Forno Ambulante', icon: '🔥', points: 800 },
+      cookie500:    { threshold: 500,  name: 'Biscottificio', icon: '🏭', points: 1500 }
+    };
+
+    // Chicken badges - 🍗 Cosce di Pollo (medium rarity)
+    this.CHICKEN_BADGES = {
+      firstChicken: { threshold: 1,    name: 'Prima Coscia!', icon: '🍗', points: 30 },
+      chicken10:    { threshold: 10,   name: 'Pollo Lover', icon: '🍗', points: 150 },
+      chicken25:    { threshold: 25,   name: 'Gourmet', icon: '🐔', points: 300 },
+      chicken50:    { threshold: 50,   name: 'Chef Stellato', icon: '⭐', points: 600 },
+      chicken100:   { threshold: 100,  name: 'Re del Pollo', icon: '👑', points: 1200 },
+      chicken200:   { threshold: 200,  name: 'Rosticceria Reale', icon: '🏰', points: 2000 }
+    };
+
+    // Bone Collector badges - 🦴 Ossetti (rarest, highest value)
     this.BONE_BADGES = {
       // Milestone badges
       firstBone:    { threshold: 1,    name: 'Primo Osso!', icon: '🦴', points: 50 },
@@ -269,11 +290,42 @@ export class AchievementsService {
   }
 
   /**
+   * Get unlocked cookie badges
+   */
+  getUnlockedCookieBadges(boneStats) {
+    if (!boneStats) return [];
+    const unlocked = [];
+    const count = boneStats.cookieCollected || 0;
+    Object.entries(this.COOKIE_BADGES).forEach(([key, badge]) => {
+      if (count >= badge.threshold) {
+        unlocked.push({ key, ...badge, category: 'cookies', unlocked: true });
+      }
+    });
+    return unlocked;
+  }
+
+  /**
+   * Get unlocked chicken badges
+   */
+  getUnlockedChickenBadges(boneStats) {
+    if (!boneStats) return [];
+    const unlocked = [];
+    const count = boneStats.chickenCollected || 0;
+    Object.entries(this.CHICKEN_BADGES).forEach(([key, badge]) => {
+      if (count >= badge.threshold) {
+        unlocked.push({ key, ...badge, category: 'chicken', unlocked: true });
+      }
+    });
+    return unlocked;
+  }
+
+  /**
    * Get unlocked bone collector badges
    */
   getUnlockedBoneBadges(boneStats) {
     if (!boneStats) return [];
     const unlocked = [];
+    const boneCount = boneStats.boneCollected || 0;
 
     Object.entries(this.BONE_BADGES).forEach(([key, badge]) => {
       let qualifies = false;
@@ -285,7 +337,7 @@ export class AchievementsService {
       } else if (badge.weekly) {
         qualifies = (boneStats.totalCollected || 0) >= badge.threshold;
       } else {
-        qualifies = (boneStats.totalCollected || 0) >= badge.threshold;
+        qualifies = boneCount >= badge.threshold;
       }
 
       if (qualifies) {
@@ -392,8 +444,10 @@ export class AchievementsService {
     const activityBadges = this.getUnlockedActivityBadges(poops.length);
     const streakBadges = this.getUnlockedStreakBadges(streak.current);
     const healthBadges = this.getUnlockedHealthBadges(poops);
+    const cookieBadges = this.getUnlockedCookieBadges(boneStats);
+    const chickenBadges = this.getUnlockedChickenBadges(boneStats);
     const boneBadges = this.getUnlockedBoneBadges(boneStats);
-    const allBadges = [...unlockedBadges, ...activityBadges, ...streakBadges, ...healthBadges, ...boneBadges];
+    const allBadges = [...unlockedBadges, ...activityBadges, ...streakBadges, ...healthBadges, ...cookieBadges, ...chickenBadges, ...boneBadges];
 
     // Calculate total bonus points from all badges
     const badgePoints = allBadges.reduce((sum, b) => sum + (b.points || 0), 0);
