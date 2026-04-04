@@ -431,10 +431,12 @@ class PoopTracker {
   // ========== BONE COLLECTOR ==========
 
   updateBoneCounter(stats) {
-    const counter = document.getElementById('boneCount');
-    if (counter) {
-      counter.textContent = stats.totalCollected || 0;
-    }
+    const cookieEl = document.getElementById('cookieCount');
+    const chickenEl = document.getElementById('chickenCount');
+    const boneEl = document.getElementById('boneCount');
+    if (cookieEl) cookieEl.textContent = stats.cookieCollected || 0;
+    if (chickenEl) chickenEl.textContent = stats.chickenCollected || 0;
+    if (boneEl) boneEl.textContent = stats.boneCollected || 0;
   }
 
   // ========== FILTERS & STATISTICS ==========

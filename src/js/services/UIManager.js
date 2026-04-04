@@ -929,6 +929,8 @@ export class UIManager {
       activity: { label: '📦 Attività', badges: [] },
       streak: { label: '🔥 Streak', badges: [] },
       health: { label: '💚 Salute', badges: [] },
+      cookies: { label: '🍪 Biscottini', badges: [] },
+      chicken: { label: '🍗 Cosce di Pollo', badges: [] },
       bones: { label: '🦴 Ossetti', badges: [] }
     };
 
