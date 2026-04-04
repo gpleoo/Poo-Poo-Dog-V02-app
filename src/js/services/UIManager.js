@@ -928,7 +928,8 @@ export class UIManager {
       undefined: { label: '🗺️ Esplorazione', badges: [] },
       activity: { label: '📦 Attività', badges: [] },
       streak: { label: '🔥 Streak', badges: [] },
-      health: { label: '💚 Salute', badges: [] }
+      health: { label: '💚 Salute', badges: [] },
+      bones: { label: '🦴 Ossetti', badges: [] }
     };
 
     badges.forEach(badge => {

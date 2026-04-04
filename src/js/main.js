@@ -15,6 +15,7 @@ import { ChartService } from './services/ChartService.js';
 import { ExportService } from './services/ExportService.js';
 import { UIManager } from './services/UIManager.js';
 import { AchievementsService } from './services/AchievementsService.js';
+import { BoneCollectorService } from './services/BoneCollectorService.js';
 
 import { COPYRIGHT } from './utils/constants.js';
 import { debounce } from './utils/helpers.js';
@@ -32,6 +33,7 @@ class PoopTracker {
     this.exportService = new ExportService();
     this.uiManager = new UIManager();
     this.achievementsService = new AchievementsService();
+    this.boneCollectorService = new BoneCollectorService(this.mapService, this.notificationService);
 
     // Pending poop data
     this.pendingPoopData = null;
@@ -60,6 +62,13 @@ class PoopTracker {
       // Initialize GPS if enabled
       if (this.dataService.isGPSEnabled()) {
         await this.mapService.initGeolocation();
+
+        // Start bone collector after GPS is available
+        this.boneCollectorService.onBoneCollected = (bone, stats) => {
+          this.updateBoneCounter(stats);
+          this.updateAchievementsUI();
+        };
+        this.boneCollectorService.start();
       }
 
       // Initialize UI
@@ -76,6 +85,9 @@ class PoopTracker {
 
       // Update UI
       this.updateAllUI();
+
+      // Update bone counter
+      this.updateBoneCounter(this.boneCollectorService.getStats());
 
       // Check urgent reminders (after UI is ready)
       this.checkUrgentReminders();
@@ -416,6 +428,15 @@ class PoopTracker {
     this.uiManager.updateDogPhotoPreview(dogPhoto);
   }
 
+  // ========== BONE COLLECTOR ==========
+
+  updateBoneCounter(stats) {
+    const counter = document.getElementById('boneCount');
+    if (counter) {
+      counter.textContent = stats.totalCollected || 0;
+    }
+  }
+
   // ========== FILTERS & STATISTICS ==========
 
   applyFilters(filters) {
@@ -633,7 +654,8 @@ class PoopTracker {
       const poops = this.dataService.getAllPoops();
 
       // Calculate achievements (includes streak, health alert, all badges)
-      const achievementsData = this.achievementsService.getAchievements(poops);
+      const boneStats = this.boneCollectorService ? this.boneCollectorService.getStats() : null;
+      const achievementsData = this.achievementsService.getAchievements(poops, null, boneStats);
 
       // Update UI
       this.uiManager.updateAchievements(achievementsData);
@@ -768,6 +790,7 @@ class PoopTracker {
   destroy() {
     this.mapService.destroy();
     this.chartService.destroyAllCharts();
+    this.boneCollectorService.destroy();
   }
 }
 
